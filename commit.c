@@ -197,5 +197,16 @@ int commit_create(const char *message, ObjectID *commit_id_out) {
     // TODO: Implement commit creation
     // (See Lab Appendix for logical steps)
     (void)message; (void)commit_id_out;
+
+    // 1. Build tree from index
+    if (tree_from_index(&commit.tree) != 0) return -1;
+
+    // 2. Read parent (if exists)
+    if (head_read(&commit.parent) == 0) {
+        commit.has_parent = 1;
+    } else {
+        commit.has_parent = 0;
+    }
+    
     return -1;
 }
