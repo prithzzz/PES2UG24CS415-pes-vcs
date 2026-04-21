@@ -198,6 +198,8 @@ int commit_create(const char *message, ObjectID *commit_id_out) {
     // (See Lab Appendix for logical steps)
     (void)message; (void)commit_id_out;
 
+    Commit commit;
+
     // 1. Build tree from index
     if (tree_from_index(&commit.tree) != 0) return -1;
 
@@ -207,6 +209,10 @@ int commit_create(const char *message, ObjectID *commit_id_out) {
     } else {
         commit.has_parent = 0;
     }
-    
+
+    // 3. Author and timestamp
+    snprintf(commit.author, sizeof(commit.author), "%s", pes_author());
+    commit.timestamp = (uint64_t)time(NULL);
+
     return -1;
 }
