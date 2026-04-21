@@ -191,6 +191,35 @@ int index_save(const Index *index) {
     // TODO: Implement atomic index saving
     // (See Lab Appendix for logical steps)
     (void)index;
+    Index sorted = *index;
+
+    qsort(sorted.entries, sorted.count, sizeof(IndexEntry), compare_index_entries);
+
+    char temp_path[] = ".pes/index.tmp";
+
+    FILE *fp = fopen(temp_path, "w");
+    if (!fp) return -1;
+
+    for (int i = 0; i < sorted.count; i++) {
+        char hash_hex[HASH_HEX_SIZE + 1];
+        hash_to_hex(&sorted.entries[i].hash, hash_hex);
+
+        fprintf(fp, "%o %s %lu %u %s\n",
+                sorted.entries[i].mode,
+                hash_hex,
+                sorted.entries[i].mtime_sec,
+                sorted.entries[i].size,
+                sorted.entries[i].path);
+    }
+
+    fflush(fp);
+    fsync(fileno(fp));
+    fclose(fp);
+
+    if (rename(temp_path, INDEX_FILE) != 0) {
+        return -1;
+    }
+
     return -1;
 }
 
