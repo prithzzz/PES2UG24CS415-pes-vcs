@@ -130,6 +130,60 @@ int tree_serialize(const Tree *tree, void **data_out, size_t *len_out) {
 //   - object_write    : save that binary buffer to the store as OBJ_TREE
 //
 // Returns 0 on success, -1 on error.
+
+static int build_tree(char **paths, ObjectID *hashes, uint32_t *modes, int count, ObjectID *out_id) {
+    Tree tree;
+    tree.count = 0;
+
+    for (int i = 0; i < count; i++) {
+        char *slash = strchr(paths[i], '/');
+
+        if (!slash) {
+            TreeEntry *e = &tree.entries[tree.count++];
+            e->mode = modes[i];
+            e->hash = hashes[i];
+            strcpy(e->name, paths[i]);
+        } else {
+            char dirname[256];
+            int len = slash - paths[i];
+            strncpy(dirname, paths[i], len);
+            dirname[len] = '\0';
+
+            char *sub_paths[MAX_TREE_ENTRIES];
+            ObjectID sub_hashes[MAX_TREE_ENTRIES];
+            uint32_t sub_modes[MAX_TREE_ENTRIES];
+            int sub_count = 0;
+
+            for (int j = i; j < count; j++) {
+                if (strncmp(paths[j], dirname, len) == 0 && paths[j][len] == '/') {
+                    sub_paths[sub_count] = paths[j] + len + 1;
+                    sub_hashes[sub_count] = hashes[j];
+                    sub_modes[sub_count] = modes[j];
+                    sub_count++;
+                }
+            }
+
+            ObjectID sub_tree_id;
+            build_tree(sub_paths, sub_hashes, sub_modes, sub_count, &sub_tree_id);
+
+            TreeEntry *e = &tree.entries[tree.count++];
+            e->mode = MODE_DIR;
+            e->hash = sub_tree_id;
+            strcpy(e->name, dirname);
+
+            i += sub_count - 1;
+        }
+    }
+
+    void *data;
+    size_t len;
+    tree_serialize(&tree, &data, &len);
+    object_write(OBJ_TREE, data, len, out_id);
+    free(data);
+
+    return 0;
+}
+
 int tree_from_index(ObjectID *id_out) {
     // TODO: Implement recursive tree building
     // (See Lab Appendix for logical steps)
