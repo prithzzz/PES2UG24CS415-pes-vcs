@@ -127,6 +127,10 @@ int index_status(const Index *index) {
 
 // ─── TODO: Implement these ───────────────────────────────────────────────────
 
+static int compare_index_entries(const void *a, const void *b) {
+    return strcmp(((const IndexEntry *)a)->path, ((const IndexEntry *)b)->path);
+}
+
 // Load the index from .pes/index.
 //
 // HINTS - Useful functions:
